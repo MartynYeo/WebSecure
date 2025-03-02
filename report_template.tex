@@ -1,0 +1,71 @@
+\documentclass{article}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry} % Set page margins
+
+\title{Security Vulnerability Report}
+\author{SeCoRA - AI SAST}
+\date{((( report.timestamp )))}
+
+\begin{document}
+
+\maketitle
+
+\section{Summary}
+\begin{itemize}
+    \item Total Vulnerabilities: ((( report.summary.total )))
+    \item Critical: ((( report.summary.critical )))
+    \item High: ((( report.summary.high )))
+    \item Medium: ((( report.summary.medium )))
+    \item Low: ((( report.summary.low )))
+    \item Info: ((( report.summary.info )))
+    \item Risk Score: ((( report.risk_score )))
+\end{itemize}
+
+\section{Detailed Vulnerabilities}
+((* for vuln in report.vulnerabilities *))
+    \subsection{Vulnerability: ((( vuln.type ))) (((( vuln.severity ))))}
+    \begin{itemize}
+        \item \textbf{Description:} ((( vuln.description )))
+        \item \textbf{Impact:} ((( vuln.impact )))
+        \item \textbf{Location:} ((( vuln.location.file_path ))):\((( vuln.location.start_line )))
+        \item \textbf{CWE ID:} \href{https://cwe.mitre.org/data/definitions/((( vuln.cwe_id ))).html}{((( vuln.cwe_id )))}
+        \item \textbf{OWASP Category:} ((( vuln.owasp_category )))
+        \item \textbf{CVSS Score:} ((( vuln.cvss_score )))
+        \item \textbf{Remediation:} ((( vuln.remediation )))
+          ((* if vuln.secure_code_example *))
+            \item \textbf{Secure Code Example:}
+            \begin{lstlisting}[language=Python, caption=Secure Code Example, basicstyle=\ttfamily\footnotesize, frame=single]
+(((( vuln.secure_code_example ))))
+            \end{lstlisting}
+            ((* endif *))
+
+        \item \textbf{References:}
+        \begin{itemize}
+          ((* for ref in vuln.references *))
+            \item \href{((( ref )))}{((( ref )))}
+            ((* endfor *))
+        \end{itemize}
+    \end{itemize}
+((* endfor *))
+
+  ((* if report.chained_vulnerabilities *))
+ \section{Chained Vulnerabilities}
+    ((* for chain in report.chained_vulnerabilities *))
+    \subsection{Vulnerability Chain}
+    \begin{itemize}
+        \item \textbf{Combined Severity:} ((( chain.combined_severity )))
+        \item \textbf{Attack Path:} ((( chain.attack_path )))
+        \item \textbf{Likelihood:} ((( chain.likelihood )))
+        \item \textbf{Prerequisites:}
+           \begin{itemize}
+            ((* for prereq in chain.prerequisites *))
+                \item ((( prereq )))
+            ((* endfor *))
+            \end{itemize}
+        \item \textbf{Mitigation Priority: }((( chain.mitigation_priority )))
+    \end{itemize}
+ ((* endfor *))
+((* endif *))
+\end{document}
