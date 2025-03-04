@@ -8,9 +8,9 @@ from datetime import datetime
 from analyzer.zap_scanner import scan_url
 from analyzer.wapiti_scanner import run_wapiti
 from analyzer.sqlmap_scanner import run_sqlmap
-from analyzer.commix_scanner import run_commix  # Import the Wapiti scanner
-from analyzer.sstimap_scanner import run_sstimap  # Import the Wapiti scanner
-from analyzer.XSStrike_scanner import run_XSStrike  # Import the Wapiti scanner
+from analyzer.commix_scanner import run_commix
+from analyzer.sstimap_scanner import run_sstimap
+from analyzer.XSStrike_scanner import run_XSStrike
 from report_manager import ReportManager
 from zapv2 import ZAPv2
 
@@ -29,6 +29,14 @@ def is_valid_repo_url(url: str) -> bool:
 def is_valid_scan_url(url: str) -> bool:
     return url.startswith("http://") or url.startswith("https://")
 
+
+# --- Initialize Session State ---
+if "scan_completed" not in st.session_state:
+    st.session_state.scan_completed = False
+if "scan_results" not in st.session_state:
+    st.session_state.scan_results = None
+if "scan_results_pdf" not in st.session_state:
+    st.session_state.scan_results_pdf = None
 
 # --- UI Setup ---
 st.set_page_config(page_title="INSPECTIFY", layout="wide")
@@ -142,74 +150,149 @@ with tabs[1]:
     # Add a multiselect dropdown for scanners
     selected_scanners = st.multiselect(
         "Options",
-        ["OWASP ZAP", "Wapiti", "SQLMap", "XSStrike", "COMMIX", "SSTImap"],
-        default=["OWASP ZAP", "Wapiti"],
+        ["ZAP", "Wapiti", "SQLMap", "XSStrike", "COMMIX", "SSTImap"],
+        default=["ZAP", "Wapiti"],
     )
 
     # Center the "Start Scan" button and make it fill the space
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        scan_button = st.button("Start Scan", use_container_width=True)
-
-if scan_button:
-    if target_url:
-        if is_valid_scan_url(target_url):
-            if not selected_scanners:
-                st.error("Please select at least one scanner.")
-            else:
-                report_manager = ReportManager("./scans/consolidated_scan_results.pdf")
-                if "OWASP ZAP" in selected_scanners:
-                    st.header("OWASP ZAP Scan:")
-                    st.write(f"Scanning URL: {target_url} with depth: {scan_depth}")
-                    scan_url(report_manager, target_url, scan_depth)
-                    st.markdown("---")
-                if "Wapiti" in selected_scanners:
-                    st.header("Wapiti Scan:")
-                    run_wapiti(
-                        report_manager, target_url, scan_depth
-                    )  # Run Wapiti after ZAP with scan depth
-                if "SQLMap" in selected_scanners:
-                    st.header("SQLMap Scan:")
-                    run_sqlmap(
-                        report_manager, target_url, scan_depth
-                    )  # Run SQLMap scan
-                    st.markdown("---")
-                if "XSStrike" in selected_scanners:
-                    st.header("XSStrike Scan:")
-                    run_XSStrike(
-                        report_manager, target_url, scan_depth
-                    )  # Run XSStrike scan
-                    st.markdown("---")
-                if "COMMIX" in selected_scanners:
-                    st.header("COMMIX Scan:")
-                    run_commix(
-                        report_manager, target_url, scan_depth
-                    )  # Run Commix scan
-                    st.markdown("---")
-                if "SSTImap" in selected_scanners:
-                    st.header("SSTImap Scan:")
-                    run_sstimap(
-                        report_manager, target_url, scan_depth
-                    )  # Run SSTImap scan
-                    st.markdown("---")
-
-                # Change the scan button to a download button
-                with open("scans/consolidated_scan_results.pdf", "rb") as file:
-                    st.session_state.scan_results_pdf = file.read()
-
-                st.download_button(
-                    label="📥 Download Consolidated Scan Results (PDF)",
-                    data=st.session_state.scan_results_pdf,
-                    file_name="consolidated_scan_results.pdf",
-                    mime="application/pdf",
-                )
-
-        else:
-            st.error(
-                "Invalid URL. Please enter a valid URL starting with http:// or https://."
+        # Only show scan button if we haven't completed a scan or if we need to run a new scan
+        if not st.session_state.scan_completed:
+            scan_button = st.button(
+                "Start Scan", use_container_width=True, key="scan_button"
             )
+        else:
+            # Add a button to run a new scan if we've already completed one
+            new_scan_button = st.button(
+                "Run New Scan", use_container_width=True, key="new_scan_button"
+            )
+            if new_scan_button:
+                st.session_state.scan_completed = False
+                st.rerun()
+
+
+def run_scan(target_url, scan_depth, selected_scanners):
+    if is_valid_scan_url(target_url):
+        if not selected_scanners:
+            st.error("Please select at least one scanner.")
+            return False
+        else:
+            report_manager = ReportManager("./scans/consolidated_scan_results.pdf")
+
+            if "ZAP" in selected_scanners:
+                st.header("OWASP ZAP Scan:")
+                st.write(f"Scanning URL: {target_url} with depth: {scan_depth}")
+                scan_url(report_manager, target_url, scan_depth)
+                st.markdown("---")
+            if "Wapiti" in selected_scanners:
+                st.header("Wapiti Scan:")
+                run_wapiti(report_manager, target_url, scan_depth)
+                st.markdown("---")
+            if "SQLMap" in selected_scanners:
+                st.header("SQLMap Scan:")
+                run_sqlmap(report_manager, target_url, scan_depth)
+                st.markdown("---")
+            if "XSStrike" in selected_scanners:
+                st.header("XSStrike Scan:")
+                run_XSStrike(report_manager, target_url, scan_depth)
+                st.markdown("---")
+            if "COMMIX" in selected_scanners:
+                st.header("COMMIX Scan:")
+                run_commix(report_manager, target_url, scan_depth)
+                st.markdown("---")
+            if "SSTImap" in selected_scanners:
+                st.header("SSTImap Scan:")
+                run_sstimap(report_manager, target_url, scan_depth)
+                st.markdown("---")
+
+            # Save the PDF to session state
+            with open("scans/consolidated_scan_results.pdf", "rb") as file:
+                st.session_state.scan_results_pdf = file.read()
+
+            # Mark scan as completed
+            st.session_state.scan_completed = True
+            return True
+    else:
+        st.error(
+            "Invalid URL. Please enter a valid URL starting with http:// or https://."
+        )
+        return False
+
+
+# Check if scan button was pressed or we have scan results already
+if "scan_button" in locals() and scan_button:
+    if target_url:
+        with st.spinner("Running scan..."):
+            success = run_scan(target_url, scan_depth, selected_scanners)
+            if success:
+                # Store important values in session state
+                st.session_state.target_url = target_url
+                st.session_state.scan_depth = scan_depth
+                st.session_state.selected_scanners = selected_scanners
     else:
         st.error("Please enter a URL to scan.")
+
+# # Display download button if scan completed
+# if st.session_state.scan_completed and st.session_state.scan_results_pdf:
+#     st.download_button(
+#         label="📥 Download Consolidated Scan Results (PDF)",
+#         data=st.session_state.scan_results_pdf,
+#         file_name="consolidated_scan_results.pdf",
+#         mime="application/pdf",
+#         key="download_button",
+#     )
+
+
+#     # Display scan information
+#     st.success("Scan completed successfully!")
+#     st.write(f"**Target URL:** {st.session_state.target_url}")
+#     st.write(f"**Scan Depth:** {st.session_state.scan_depth}")
+#     st.write(f"**Scanners Used:** {', '.join(st.session_state.selected_scanners)}")
+
+# Display scan information
+if st.session_state.scan_completed and st.session_state.scan_results_pdf:
+    st.success("Scan completed successfully!")
+    st.write(f"**Target URL:** {st.session_state.target_url}")
+    st.write(f"**Scan Depth:** {st.session_state.scan_depth}")
+    st.write(f"**Scanners Used:** {', '.join(st.session_state.selected_scanners)}")
+
+    # Display individual scanner outputs with download buttons
+    st.header("Download Scan Results by Tool :")
+
+    for scanner in st.session_state.get(
+        "selected_scanners", []
+    ):  # Avoid KeyError if selected_scanners is missing
+        st.header(scanner)
+        pdf_key = f"{scanner.lower()}_scan_report_pdf"
+
+        try:
+            with open(f"scans/{scanner.lower()}_scan_report.pdf", "rb") as pdf_file:
+                pdf_data = pdf_file.read()
+
+            # Add a download button
+            st.download_button(
+                label=f"📥 Download {scanner} Scan Report (PDF)",
+                data=pdf_data,
+                file_name=f"{scanner.lower()}_scan_report.pdf",
+                mime="application/pdf",
+            )
+
+        except FileNotFoundError:
+            st.error(
+                f"File not found: {scanner.lower()}_scan_report.pdf. Ensure the file exists and the path is correct."
+            )
+
+    st.markdown("---")
+
+    st.header("Consolidated Scan Results")
+    st.download_button(
+        label="📥 Download Consolidated Scan Results (PDF)",
+        data=st.session_state.scan_results_pdf,
+        file_name="consolidated_scan_results.pdf",
+        mime="application/pdf",
+        key="download_button",
+    )
 
 
 # --- Analysis Logic (using httpx for requests to FastAPI) ---
