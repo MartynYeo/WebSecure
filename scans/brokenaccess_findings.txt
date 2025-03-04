@@ -1,0 +1,36 @@
+# Broken Access Control Scan Report
+
+## Authentication Information
+
+### Login Attempts
+
+**Attempt 1:**
+- Username: `admin`
+- Password: `admin`
+- Status: success
+- Time: 2025-03-05 00:22:19
+
+### Successful Authentication
+
+- **Username:** `admin`
+- **Password:** `admin`
+- **Form Action:** http://testhtml5.vulnweb.com/login
+- **Method:** POST
+- **Time:** 2025-03-05 00:22:19
+
+## Vulnerability Scan Results
+
+No broken access control vulnerabilities detected.
+
+
+## Recommendations
+
+1. Implement proper access control checks on all sensitive resources
+2. Use authorization frameworks or libraries that enforce role-based access control
+3. Deny access by default and require explicit grants
+4. Don't rely on obscurity or hiding of endpoints for security
+5. Implement re-authentication for sensitive operations
+6. Use random, unpredictable values for resource identifiers instead of sequential IDs
+7. Ensure all API endpoints have proper authorization checks
+8. Implement strict password policies and account lockout mechanisms
+9. Monitor and log access control failures

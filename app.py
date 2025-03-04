@@ -13,6 +13,7 @@ from analyzer.sstimap_scanner import run_sstimap
 from analyzer.XSStrike_scanner import run_XSStrike
 from report_manager import ReportManager
 from zapv2 import ZAPv2
+from analyzer.broken_access_scanner import run_broken_access_scan
 
 
 zap = ZAPv2(
@@ -140,6 +141,7 @@ with tabs[1]:
                         <b>XSStrike:</b> A tool for detecting and exploiting XSS vulnerabilities.<br>
                         <b>COMMIX:</b> A tool for testing web applications for command injection vulnerabilities.(May take long)<br>
                         <b>SSTImap:</b> A tool for detecting and exploiting Server-Side Template Injection vulnerabilities.(May take long)
+                        <b>BrokenAccess:</b> A scanner that detects broken access control vulnerabilities such as IDOR and unauthorized access to protected resources.
                     </span>
                 </div>
             </div>
@@ -149,9 +151,9 @@ with tabs[1]:
 
     # Add a multiselect dropdown for scanners
     selected_scanners = st.multiselect(
-        "Options",
-        ["ZAP", "Wapiti", "SQLMap", "XSStrike", "COMMIX", "SSTImap"],
-        default=["ZAP", "Wapiti"],
+    "Options",
+    ["ZAP", "Wapiti", "SQLMap", "XSStrike", "COMMIX", "SSTImap", "Broken Access Control"],
+    default=["ZAP", "Wapiti"],
     )
 
     # Center the "Start Scan" button and make it fill the space
@@ -204,6 +206,10 @@ def run_scan(target_url, scan_depth, selected_scanners):
             if "SSTImap" in selected_scanners:
                 st.header("SSTImap Scan:")
                 run_sstimap(report_manager, target_url, scan_depth)
+                st.markdown("---")
+            if "Broken Access Control" in selected_scanners:
+                st.header("Broken Access Control Scan:")
+                run_broken_access_scan(report_manager, target_url, scan_depth)
                 st.markdown("---")
 
             # Save the PDF to session state
